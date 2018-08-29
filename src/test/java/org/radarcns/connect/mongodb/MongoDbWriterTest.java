@@ -87,7 +87,8 @@ public class MongoDbWriterTest {
 
         Timer timer = mock(Timer.class);
 
-        MongoDbWriter writer = new MongoDbWriter(wrapper, buffer, 1000, 1, factory, timer);
+        MongoDbWriter writer = new MongoDbWriter(wrapper, buffer,
+                "OFFSETS",1000, 1, factory, timer);
         verify(timer).schedule(any(Monitor.class), eq(0L), eq(30_000L));
 
         Thread writerThread = new Thread(writer, "MongoDB-writer");
