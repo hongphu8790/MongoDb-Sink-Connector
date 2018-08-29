@@ -2,9 +2,10 @@ plugins {
     id 'java-library'
     id 'idea'
     id "com.jfrog.bintray" version "1.7.3" apply false
+    id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
-version = '0.2.2'
+version = '0.2.3-SNAPSHOT'
 
 targetCompatibility = '1.8'
 sourceCompatibility = '1.8'
@@ -33,6 +34,8 @@ dependencies {
     compileOnly group: 'org.apache.kafka', name: 'kafka_2.11', version: kafkaVersion
 
     api group: 'org.mongodb', name: 'mongo-java-driver', version: mongodbVersion
+
+    classpath "com.github.jengelman.gradle.plugins:shadow"
 }
 
 jar {
@@ -42,8 +45,13 @@ jar {
     }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.4'
+shadowJar {
+    dependencies {
+    }
+}
+
+wrapper {
+    gradleVersion = '4.8'
 }
 
 if (!hasProperty('profile')) {

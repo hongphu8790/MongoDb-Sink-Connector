@@ -36,7 +36,11 @@ import java.util.Timer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import static org.radarcns.connect.mongodb.MongoDbSinkConnector.*;
+import static org.radarcns.connect.mongodb.MongoDbSinkConnector.RECORD_CONVERTER;
+import static org.radarcns.connect.mongodb.MongoDbSinkConnector.OFFSET_COLLECTION;
+import static org.radarcns.connect.mongodb.MongoDbSinkConnector.BUFFER_CAPACITY;
+import static org.radarcns.connect.mongodb.MongoDbSinkConnector.BATCH_SIZE;
+import static org.radarcns.connect.mongodb.MongoDbSinkConnector.BATCH_FLUSH_MS;
 
 /**
  * Task to handle data coming from Kafka and send it to MongoDB.
@@ -58,7 +62,7 @@ public class MongoDbSinkTask extends SinkTask {
     private Timer timerThread;
 
     public MongoDbSinkTask() {
-        monitor = new Monitor("have been processed");
+        monitor = new Monitor(log, "have been processed");
         putTimer = new OperationTimer(log, "PUT");
         latestOffsetPut = new HashMap<>();
     }
@@ -90,7 +94,8 @@ public class MongoDbSinkTask extends SinkTask {
         Integer flushMs = config.getInt(BATCH_FLUSH_MS);
         String offsetCollection = config.getString(OFFSET_COLLECTION);
 
-        writer = createMongoDbWriter(config, buffer, offsetCollection, batchSize, flushMs, converterFactory,
+        writer = createMongoDbWriter(config, buffer, offsetCollection,
+                batchSize, flushMs, converterFactory,
                 timerThread);
         writerThread = new Thread(writer, "MongDB-writer");
         writerThread.start();
@@ -106,12 +111,14 @@ public class MongoDbSinkTask extends SinkTask {
      * @throws ConnectException if no connection could be made.
      */
     public MongoDbWriter createMongoDbWriter(AbstractConfig config,
-            BlockingQueue<SinkRecord> buffer, String offsetCollection, int batchSize, long flushMs,
-            RecordConverterFactory converterFactory, Timer timer)
+                                             BlockingQueue<SinkRecord> buffer,
+                                             String offsetCollection, int batchSize, long flushMs,
+                                             RecordConverterFactory converterFactory, Timer timer)
             throws ConnectException {
         MongoWrapper mongoHelper = new MongoWrapper(config, null);
 
-        return new MongoDbWriter(mongoHelper, buffer, offsetCollection, batchSize, flushMs, converterFactory, timer);
+        return new MongoDbWriter(mongoHelper, buffer, offsetCollection,
+                batchSize, flushMs, converterFactory, timer);
     }
 
     @Override

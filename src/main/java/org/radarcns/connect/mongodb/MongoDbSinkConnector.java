@@ -27,6 +27,7 @@ import org.radarcns.connect.mongodb.serialization.RecordConverterFactory;
 import org.radarcns.connect.util.NotEmptyString;
 import org.radarcns.connect.util.Utility;
 import org.radarcns.connect.util.ValidClass;
+import org.radarcns.connect.util.ValidMongoUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,12 +49,7 @@ public class MongoDbSinkConnector extends SinkConnector {
     private static final Logger logger = LoggerFactory.getLogger(MongoDbSinkConnector.class);
 
     public static final String MONGO_GROUP = "MongoDB";
-    public static final String MONGO_HOST = "mongo.host";
-    public static final String MONGO_PORT = "mongo.port";
-    public static final int MONGO_PORT_DEFAULT = 27017;
-    public static final String MONGO_USERNAME = "mongo.username";
-    public static final String MONGO_PASSWORD = "mongo.password";
-    public static final String MONGO_DATABASE = "mongo.database";
+    public static final String MONGO_URI = "mongo.uri";
     public static final String BUFFER_CAPACITY = "buffer.capacity";
     public static final int BUFFER_CAPACITY_DEFAULT = 20_000;
     public static final String BATCH_SIZE = "batch.size";
@@ -66,28 +62,19 @@ public class MongoDbSinkConnector extends SinkConnector {
     public static final String OFFSET_COLLECTION = "mongo.offset.collection";
 
     static final ConfigDef CONFIG_DEF = new ConfigDef()
-            .define(MONGO_HOST, Type.STRING, NO_DEFAULT_VALUE, new NotEmptyString(), HIGH,
-                "MongoDB host name to write data to", MONGO_GROUP, 0, ConfigDef.Width.MEDIUM,
-                "MongoDB hostname")
-            .define(MONGO_PORT, Type.INT, MONGO_PORT_DEFAULT, ConfigDef.Range.atLeast(1),
-                LOW, "MongoDB port", MONGO_GROUP, 1, ConfigDef.Width.SHORT, "MongoDB port")
-            .define(MONGO_DATABASE, Type.STRING, NO_DEFAULT_VALUE, new NotEmptyString(),
-                HIGH, "MongoDB database name", MONGO_GROUP, 2, ConfigDef.Width.SHORT,
-                "MongoDB database")
-            .define(MONGO_USERNAME, Type.STRING, null, MEDIUM,
-                "Username to connect to MongoDB database. If not set, no credentials are used.",
-                    MONGO_GROUP, 3, ConfigDef.Width.SHORT, "MongoDB username",
-                Collections.singletonList(MONGO_PASSWORD))
-            .define(MONGO_PASSWORD, Type.STRING, null, MEDIUM,
-                "Password to connect to MongoDB database. If not set, no credentials are used.",
-                    MONGO_GROUP, 4, ConfigDef.Width.SHORT, "MongoDB password",
-                Collections.singletonList(MONGO_USERNAME))
+            .define(MONGO_URI, Type.STRING, NO_DEFAULT_VALUE, new ValidMongoUri(), HIGH,
+                "URI encoding MongoDB host, port, user (if any) and database.",
+                    MONGO_GROUP, 0, ConfigDef.Width.MEDIUM, "MongoDB URI")
             .define(COLLECTION_FORMAT, Type.STRING, "{$topic}", new NotEmptyString(), MEDIUM,
                 "A format string for the destination collection name, which may contain "
                 + "`${topic}` as a placeholder for the originating topic name.\n"
                 + "For example, `kafka_${topic}` for the topic `orders` will map to the "
                 + "collection name `kafka_orders`.", MONGO_GROUP, 5, ConfigDef.Width.LONG,
                 "MongoDB collection name format")
+            .define(OFFSET_COLLECTION, Type.STRING, OFFSET_COLLECTION_DEFAULT,
+                    MEDIUM, "The mongo collection for storage "
+                            + "the latest offset processed. Default: "
+                            + OFFSET_COLLECTION_DEFAULT)
             .define(TOPICS_CONFIG, Type.LIST, NO_DEFAULT_VALUE, HIGH,
                 "List of topics to be streamed.")
             .define(BUFFER_CAPACITY, Type.INT, BUFFER_CAPACITY_DEFAULT,
@@ -103,9 +90,7 @@ public class MongoDbSinkConnector extends SinkConnector {
                             + " does not reach this capacity within batch.flush.ms, it will be"
                             + " written anyway.")
             .define(BATCH_FLUSH_MS, Type.INT, BATCH_FLUSH_MS_DEFAULT, ConfigDef.Range.atLeast(0),
-                LOW, "Flush a batch after this amount of milliseconds.")
-            .define(OFFSET_COLLECTION, Type.STRING, OFFSET_COLLECTION_DEFAULT,
-                    MEDIUM, "The offset collection for storage latest offset processed. Default: "+ OFFSET_COLLECTION_DEFAULT);
+                LOW, "Flush a batch after this amount of milliseconds.");
     private Map<String, String> connectorConfig;
 
     @Override
